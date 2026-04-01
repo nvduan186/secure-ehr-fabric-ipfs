@@ -1,0 +1,9 @@
+{
+  "network-configs": {
+    "ehr-network": {
+      "name": "EHR Demo Network",
+      "profile": "/opt/explorer/app/platform/fabric/connection-profile/connection-profile.json"
+    }
+  },
+  "license": "Apache-2.0"
+}

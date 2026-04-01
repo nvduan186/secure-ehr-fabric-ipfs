@@ -1,0 +1,103 @@
+# ===========================
+# Node.js
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+*.log
+
+# ===========================
+# Environment variables
+# ===========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Keep .env.example as a template
+!.env.example
+
+# ===========================
+# React / Frontend build
+# ===========================
+frontend/build/
+frontend/.cache/
+
+# ===========================
+# Hyperledger Fabric - Crypto material (sensitive)
+# ===========================
+fabric-network/organizations/
+fabric-network/channel-artifacts/
+fabric-network/system-genesis-block/
+
+# ===========================
+# Fabric Wallet (contains identity credentials)
+# ===========================
+backend/wallet/
+
+# ===========================
+# Keys & Certificates (sensitive)
+# ===========================
+keys/
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# ===========================
+# Runtime data volumes (Docker mounts)
+# ===========================
+data/couchdb0/
+data/couchdb1/
+data/orderer/
+data/peer-hospitala/
+data/peer-hospitalb/
+data/ipfs/
+data/postgres/
+data/explorer-wallet/
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+pm2-*.log
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ===========================
+# IDE / Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===========================
+# Test coverage
+# ===========================
+coverage/
+.nyc_output/
+
+# ===========================
+# Misc
+# ===========================
+*.tmp
+*.temp
+dist/

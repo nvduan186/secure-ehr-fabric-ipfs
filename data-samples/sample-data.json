@@ -1,0 +1,80 @@
+{
+  "patients": [
+    {
+      "userId": "PAT-001",
+      "name": "Nguyễn Văn An",
+      "dob": "1985-03-15",
+      "gender": "M",
+      "orgMsp": "HospitalAMSP"
+    },
+    {
+      "userId": "PAT-002",
+      "name": "Trần Thị Bình",
+      "dob": "1990-07-22",
+      "gender": "F",
+      "orgMsp": "HospitalBMSP"
+    }
+  ],
+  "doctors": [
+    {
+      "userId": "DOC-001",
+      "name": "BS. Lê Văn Cường",
+      "specialty": "Nội khoa",
+      "orgMsp": "HospitalAMSP"
+    },
+    {
+      "userId": "DOC-002",
+      "name": "BS. Phạm Thị Dung",
+      "specialty": "Tim mạch",
+      "orgMsp": "HospitalBMSP"
+    }
+  ],
+  "sampleEHRs": [
+    {
+      "ehrType": "CONSULTATION",
+      "patientId": "PAT-001",
+      "createdBy": "DOC-001",
+      "content": {
+        "chiefComplaint": "Đau đầu kéo dài 3 ngày",
+        "vitalSigns": {
+          "bloodPressure": "130/85 mmHg",
+          "heartRate": 78,
+          "temperature": 37.2,
+          "weight": 68.5
+        },
+        "diagnosis": "Đau đầu căng thẳng",
+        "diagnosisCode": "G44.2",
+        "prescription": [
+          { "drug": "Paracetamol 500mg", "dosage": "1 viên x 3 lần/ngày", "duration": "5 ngày" },
+          { "drug": "Vitamin B complex", "dosage": "1 viên/ngày", "duration": "30 ngày" }
+        ],
+        "notes": "Tái khám sau 1 tuần nếu không cải thiện"
+      }
+    },
+    {
+      "ehrType": "LAB",
+      "patientId": "PAT-001",
+      "createdBy": "DOC-001",
+      "content": {
+        "testDate": "2026-03-20",
+        "tests": [
+          { "name": "Công thức máu toàn bộ (CBC)", "result": "Bình thường", "value": { "WBC": 7.2, "RBC": 4.8, "Hgb": 14.5, "Plt": 245 } },
+          { "name": "Glucose lúc đói", "result": "5.8 mmol/L", "referenceRange": "3.9-6.1", "status": "NORMAL" },
+          { "name": "Cholesterol toàn phần", "result": "5.2 mmol/L", "referenceRange": "<5.2", "status": "BORDERLINE" }
+        ],
+        "orderedBy": "DOC-001",
+        "lab": "Khoa Xét nghiệm - Bệnh viện A"
+      }
+    }
+  ],
+  "sampleConsents": [
+    {
+      "consentId": "CONSENT-001",
+      "patientId": "PAT-001",
+      "grantedTo": "DOC-002",
+      "ehrIds": "ALL",
+      "purpose": "TREATMENT",
+      "expiresAt": "2026-06-22T00:00:00Z"
+    }
+  ]
+}

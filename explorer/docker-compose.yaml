@@ -1,0 +1,55 @@
+version: "2.4"
+
+networks:
+  ehr_network:
+    external: true
+
+services:
+  explorerdb:
+    image: ghcr.io/hyperledger-labs/explorer-db:latest
+    container_name: explorerdb
+    hostname: explorerdb
+    environment:
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=hppoc
+      - DATABASE_PASSWORD=password
+    healthcheck:
+      test: "pg_isready -h localhost -p 5432 -q -U hppoc"
+      interval: 10s
+      timeout: 5s
+      retries: 7
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ehr_network
+
+  explorer:
+    image: ghcr.io/hyperledger-labs/explorer:latest
+    container_name: explorer
+    hostname: explorer
+    environment:
+      - DATABASE_HOST=explorerdb
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=hppoc
+      - DATABASE_PASSWD=password
+      - LOG_LEVEL_APP=info
+      - LOG_LEVEL_DB=info
+      - LOG_LEVEL_CONSOLE=debug
+      - LOG_CONSOLE_STDOUT=true
+      - DISCOVERY_AS_LOCALHOST=false
+    volumes:
+      - ./config.json:/opt/explorer/app/platform/fabric/config.json
+      - ./connection-profile:/opt/explorer/app/platform/fabric/connection-profile
+      - /home/nguye/.openclaw/workspace-thesis-lead/demo/fabric-network/organizations:/crypto
+      - walletstore:/opt/explorer/wallet
+    ports:
+      - "8080:8080"
+    depends_on:
+      explorerdb:
+        condition: service_healthy
+    networks:
+      - ehr_network
+
+volumes:
+  pgdata:
+  walletstore:

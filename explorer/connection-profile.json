@@ -1,0 +1,57 @@
+{
+  "name": "EHR Demo Network",
+  "version": "1.0.0",
+  "client": {
+    "tlsEnable": true,
+    "adminCredential": {
+      "id": "exploreradmin",
+      "password": "exploreradminpw"
+    },
+    "enableAuthentication": true,
+    "organization": "HospitalAMSP",
+    "connection": {
+      "timeout": {
+        "peer": { "endorser": "300" },
+        "orderer": "300"
+      }
+    }
+  },
+  "channels": {
+    "ehr-channel": {
+      "peers": {
+        "peer0.hospitala.ehr.com": {}
+      }
+    }
+  },
+  "organizations": {
+    "HospitalAMSP": {
+      "mspid": "HospitalAMSP",
+      "adminPrivateKey": {
+        "path": "/crypto/peerOrganizations/hospitala.ehr.com/users/Admin@hospitala.ehr.com/msp/keystore/priv_sk"
+      },
+      "signedCert": {
+        "path": "/crypto/peerOrganizations/hospitala.ehr.com/users/Admin@hospitala.ehr.com/msp/signcerts/Admin@hospitala.ehr.com-cert.pem"
+      },
+      "peers": ["peer0.hospitala.ehr.com"]
+    }
+  },
+  "peers": {
+    "peer0.hospitala.ehr.com": {
+      "url": "grpcs://peer0.hospitala.ehr.com:7051",
+      "tlsCACerts": {
+        "path": "/crypto/peerOrganizations/hospitala.ehr.com/peers/peer0.hospitala.ehr.com/tls/ca.crt"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.hospitala.ehr.com"
+      }
+    }
+  },
+  "orderers": {
+    "orderer.ehr.com": {
+      "url": "grpcs://orderer.ehr.com:7050",
+      "tlsCACerts": {
+        "path": "/crypto/ordererOrganizations/ehr.com/orderers/orderer.ehr.com/msp/tlscacerts/tlsca.ehr.com-cert.pem"
+      }
+    }
+  }
+}

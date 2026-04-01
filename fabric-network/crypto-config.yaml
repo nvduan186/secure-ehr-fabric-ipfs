@@ -1,0 +1,30 @@
+OrdererOrgs:
+  - Name: Orderer
+    Domain: ehr.com
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+        SANS:
+          - localhost
+
+PeerOrgs:
+  - Name: HospitalA
+    Domain: hospitala.ehr.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+      SANS:
+        - localhost
+    Users:
+      Count: 3
+      # user1 = patient, user2 = doctor, user3 = admin (custom certs via CA)
+
+  - Name: HospitalB
+    Domain: hospitalb.ehr.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+      SANS:
+        - localhost
+    Users:
+      Count: 3

@@ -1,0 +1,342 @@
+# =============================================================
+# EHR Demo - Docker Compose tổng hợp
+# Bao gồm: Fabric (orderer + 2 peers + 2 CouchDB + 2 CA)
+#           + IPFS + Explorer + ExplorerDB
+#
+# Sử dụng:
+#   docker compose -f docker-compose.all.yml up -d       # khởi động tất cả
+#   docker compose -f docker-compose.all.yml down        # tắt (giữ data)
+#   docker compose -f docker-compose.all.yml down -v     # tắt + xóa data
+#   docker compose -f docker-compose.all.yml ps          # trạng thái
+#   docker compose -f docker-compose.all.yml logs -f     # xem log
+#
+# Data được map ra: ./data/<service>/ (persistent, không mất khi down)
+# =============================================================
+
+version: '3.7'
+
+networks:
+  ehr_network:
+    name: ehr_network
+
+volumes:
+  # Named volumes trỏ vào thư mục data/ cụ thể
+  orderer-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/orderer
+  peera-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/peer-hospitala
+  peerb-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/peer-hospitalb
+  couchdb0-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/couchdb0
+  couchdb1-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/couchdb1
+  ipfs-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/ipfs
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/postgres
+  walletstore:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DEMO_PATH:-.}/data/explorer-wallet
+
+services:
+
+  # ============================================================
+  # FABRIC CA
+  # ============================================================
+  ca_hospitala:
+    container_name: ca_hospitala
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-hospitala
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ./fabric-network/organizations/fabric-ca/hospitala:/etc/hyperledger/fabric-ca-server
+    ports:
+      - 7054:7054
+      - 17054:17054
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  ca_hospitalb:
+    container_name: ca_hospitalb
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-hospitalb
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ./fabric-network/organizations/fabric-ca/hospitalb:/etc/hyperledger/fabric-ca-server
+    ports:
+      - 8054:8054
+      - 18054:18054
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  # ============================================================
+  # COUCHDB (State DB)
+  # ============================================================
+  couchdb0:
+    container_name: couchdb0
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    volumes:
+      - couchdb0-data:/opt/couchdb/data
+    ports:
+      - 5984:5984
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  couchdb1:
+    container_name: couchdb1
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    volumes:
+      - couchdb1-data:/opt/couchdb/data
+    ports:
+      - 7984:5984
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  # ============================================================
+  # ORDERER
+  # ============================================================
+  orderer.ehr.com:
+    container_name: orderer.ehr.com
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17050
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ./fabric-network/organizations/ordererOrganizations/ehr.com/orderers/orderer.ehr.com/msp:/var/hyperledger/orderer/msp
+      - ./fabric-network/organizations/ordererOrganizations/ehr.com/orderers/orderer.ehr.com/tls:/var/hyperledger/orderer/tls
+      - orderer-data:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+      - 7053:7053
+      - 17050:17050
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  # ============================================================
+  # PEERS
+  # ============================================================
+  peer0.hospitala.ehr.com:
+    container_name: peer0.hospitala.ehr.com
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=ehr_network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_DELIVERYCLIENT_RECONNECTTOTALTIMEDURATION=600s
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.hospitala.ehr.com
+      - CORE_PEER_ADDRESS=peer0.hospitala.ehr.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.hospitala.ehr.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.hospitala.ehr.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.hospitala.ehr.com:7051
+      - CORE_PEER_LOCALMSPID=HospitalAMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.hospitala.ehr.com:17051
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./fabric-network/organizations/peerOrganizations/hospitala.ehr.com/peers/peer0.hospitala.ehr.com/msp:/etc/hyperledger/fabric/msp
+      - ./fabric-network/organizations/peerOrganizations/hospitala.ehr.com/peers/peer0.hospitala.ehr.com/tls:/etc/hyperledger/fabric/tls
+      - peera-data:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - 7051:7051
+      - 7052:7052
+      - 17051:17051
+    depends_on:
+      - couchdb0
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  peer0.hospitalb.ehr.com:
+    container_name: peer0.hospitalb.ehr.com
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=ehr_network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_DELIVERYCLIENT_RECONNECTTOTALTIMEDURATION=600s
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.hospitalb.ehr.com
+      - CORE_PEER_ADDRESS=peer0.hospitalb.ehr.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.hospitalb.ehr.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.hospitalb.ehr.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.hospitalb.ehr.com:9051
+      - CORE_PEER_LOCALMSPID=HospitalBMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.hospitalb.ehr.com:17061
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./fabric-network/organizations/peerOrganizations/hospitalb.ehr.com/peers/peer0.hospitalb.ehr.com/msp:/etc/hyperledger/fabric/msp
+      - ./fabric-network/organizations/peerOrganizations/hospitalb.ehr.com/peers/peer0.hospitalb.ehr.com/tls:/etc/hyperledger/fabric/tls
+      - peerb-data:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - 9051:9051
+      - 9052:9052
+      - 17061:17061
+    depends_on:
+      - couchdb1
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  # ============================================================
+  # IPFS (Kubo)
+  # ============================================================
+  ipfs_node:
+    container_name: ipfs_node
+    image: ipfs/kubo:latest
+    environment:
+      - IPFS_PROFILE=server
+    volumes:
+      - ipfs-data:/data/ipfs
+    ports:
+      - 4001:4001       # swarm
+      - 5001:5001       # API
+      - 8081:8080       # Gateway
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  # ============================================================
+  # HYPERLEDGER EXPLORER
+  # ============================================================
+  explorerdb:
+    container_name: explorerdb
+    image: ghcr.io/hyperledger-labs/explorer-db:latest
+    environment:
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=hppoc
+      - DATABASE_PASSWORD=password
+    healthcheck:
+      test: "pg_isready -h localhost -p 5432 -q -U hppoc"
+      interval: 10s
+      timeout: 5s
+      retries: 7
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ehr_network
+    restart: unless-stopped
+
+  explorer:
+    container_name: explorer
+    image: ghcr.io/hyperledger-labs/explorer:latest
+    environment:
+      - DATABASE_HOST=explorerdb
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=hppoc
+      - DATABASE_PASSWD=password
+      - LOG_LEVEL_APP=info
+      - LOG_LEVEL_DB=info
+      - LOG_LEVEL_CONSOLE=debug
+      - LOG_CONSOLE_STDOUT=true
+      - DISCOVERY_AS_LOCALHOST=false
+    volumes:
+      - ./explorer/config.json:/opt/explorer/app/platform/fabric/config.json
+      - ./explorer/connection-profile:/opt/explorer/app/platform/fabric/connection-profile
+      - ./fabric-network/organizations:/crypto
+      - walletstore:/opt/explorer/wallet
+    ports:
+      - 8080:8080
+    depends_on:
+      explorerdb:
+        condition: service_healthy
+    networks:
+      - ehr_network
+    restart: unless-stopped
