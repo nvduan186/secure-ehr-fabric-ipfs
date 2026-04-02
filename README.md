@@ -1,3 +1,11 @@
+# EHR Blockchain Framework — Demo
+
+> **Luận văn thạc sĩ:** Xây dựng Framework an toàn thông tin dựa trên Hyperledger Fabric và IPFS cho quản lý EHR liên bệnh viện  
+> **Học viên:** Nguyễn Văn Duẩn (MSHV: 2441861008)  
+> **GVHD:** TS. Lê Thị Ngọc Thảo, TS. Trần Hồng Ngọc
+
+---
+
 ## Tổng quan
 
 Prototype minh họa framework chia sẻ hồ sơ bệnh án điện tử (EHR) an toàn giữa các bệnh viện, sử dụng:
